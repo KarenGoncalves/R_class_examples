@@ -51,30 +51,46 @@ Elisa_Chlorophyll_YFP_all$Construct =
 
 plots = list()
 # Chlorophyll plot
-(plots[["chlorophyll_all"]] =
+plots[["chlorophyll_all"]] =
 	Elisa_Chlorophyll_YFP_all %>% 
+	mutate(newTechRepNames = case_when(
+		Technical_replicate == "TechRep_1" ~ "A",
+		Technical_replicate == "TechRep_2" ~ "B",
+		Technical_replicate == "TechRep_3" ~ "C",
+		Technical_replicate == "TechRep_4" ~ "D",
+		Technical_replicate == "TechRep_5" ~ "E",
+		Technical_replicate == "TechRep_6" ~ "F",
+	)) %>%
 	ggplot(aes(x = Construct, 
 		   y = chlorophyll_pos, 
-		   color = Technical_replicate)
-	) + geom_point(position = "jitter", size = 0.5) +
+		   color = newTechRepNames)
+	) + geom_jitter(size = 0.5) +
 	scale_color_manual(values = colors,
 			   name = "Technical\nReplicate") +
 	scale_y_continuous(limits = c(0, 100),
 			   breaks = seq(0, 100, 25)) +
-	labs(x = "Strain", y = "Chlorophyll-positive cells (%)"))
+	labs(x = "Strain", y = "Chlorophyll-positive cells (%)")
 
 # YFP positive plot
-(plots[["YFP_all"]] =
-	Elisa_Chlorophyll_YFP_all %>% 
+plots[["YFP_all"]] =
+	Elisa_Chlorophyll_YFP_all %>%  
+	mutate(newTechRepNames = case_when(
+		Technical_replicate == "TechRep_1" ~ "A",
+		Technical_replicate == "TechRep_2" ~ "B",
+		Technical_replicate == "TechRep_3" ~ "C",
+		Technical_replicate == "TechRep_4" ~ "D",
+		Technical_replicate == "TechRep_5" ~ "E",
+		Technical_replicate == "TechRep_6" ~ "F",
+	)) %>%
 	ggplot(aes(x = Construct, 
 		   y = YFP_pos, 
-		   color = Technical_replicate)
-	) + geom_point(position = "jitter", size = 0.5) +
+		   color = newTechRepNames)
+	) + geom_jitter(size = 0.5) +
 	scale_color_manual(values = colors,
 			   name = "Technical\nReplicate") +
 	scale_y_continuous(limits = c(0, 100),
 			   breaks = seq(0, 100, 25)) +
-	labs(x = "Strain", y = "YFP-positive cells (%)"))
+	labs(x = "Strain", y = "YFP-positive cells (%)")
 
 
 #### Anova ####
@@ -121,29 +137,45 @@ filteredChloro_chlorophyllYFP_data = filteredReps_chlorophyllYFP_data %>%
 
 #### New plots ####
 # Chlorophyll plot
-(plots[["chlorophyll_filtered"]] =
+plots[["chlorophyll_filtered"]] =
  	filteredChloro_chlorophyllYFP_data %>% 
+ 	mutate(newTechRepNames = case_when(
+ 		Technical_replicate == "TechRep_4" ~ "A",
+ 		Technical_replicate == "TechRep_5" ~ "B",
+ 		Technical_replicate == "TechRep_6" ~ "C",
+ 	)) %>%
  	ggplot(aes(x = Construct, 
  		   y = chlorophyll_pos, 
- 		   color = Technical_replicate)
- 	) + geom_point(position = "jitter", size = 0.5) +
+ 		   color = newTechRepNames)
+ 	) + geom_jitter(size = 0.5) +
  	scale_color_manual(values = colors[4:6],
  			   name = "Technical\nReplicate") +
  	scale_y_continuous(limits = c(0, 100),
  			   breaks = seq(0, 100, 25)) +
- 	labs(x = "Strain", y = "Chlorophyll-positive cells (%)"))
+ 	labs(x = "Strain", y = "Chlorophyll-positive cells (%)")
 
 # YFP positive plot
-(plots[["YFP_filtered"]] =
+plots[["YFP_filtered"]] =
 		filteredChloro_chlorophyllYFP_data %>% 
+		mutate(newTechRepNames = case_when(
+			Technical_replicate == "TechRep_4" ~ "A",
+			Technical_replicate == "TechRep_5" ~ "B",
+			Technical_replicate == "TechRep_6" ~ "C",
+		)) %>%
 		ggplot(aes(x = Construct, 
 			   y = YFP_pos, 
-			   color = Technical_replicate)
-		) + geom_point(position = "jitter", size = 0.5) +
+			   color = newTechRepNames)
+		) + geom_jitter(size = 0.5) +
 		scale_color_manual(values = colors[4:6],
 				   name = "Technical\nReplicate") +
 		scale_y_continuous(limits = c(0, 100),
 				   breaks = seq(0, 100, 25)) +
-		labs(x = "Strain", y = "YFP-positive cells (%)"))
+		labs(x = "Strain", y = "YFP-positive cells (%)")
 
+# Arrange all plots together
 ggarrange(plotlist = plots, nrow = 2, ncol = 2)
+
+# Align the plots
+
+ggarrange(plotlist = plots, nrow = 2, ncol = 2, vjust = T, hjust = T,
+	  labels = "AUTO")
