@@ -1,6 +1,15 @@
-library(tidyverse)
-library(readxl)
-library(ggpubr)
+# start by creating a vector with all the packages you need
+pkgs = c("readxl", "tidyverse", "ggpubr")
+
+# We check which packages are NOT (!) installed
+pkgs.To.Install = ! pkgs %in% installed.packages()
+
+# any() checks if there is at least one TRUE in the vector
+if (any(pkgs.To.Install)) install.packages(pkgs[pkgs.To.Install])
+
+for (curPkg in pkgs) library(curPkg, character.only = T) 
+# curPkg is a variable that takes the value of each element in pkgs
+
 theme_set(theme_bw())
 
 #### Set basic variables ####
