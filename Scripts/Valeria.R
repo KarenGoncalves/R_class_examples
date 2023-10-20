@@ -86,6 +86,12 @@ analysed_meanTechReps =
 	left_join(longFormat_meanTechReps,
 	  cldCode, by = c("Sample_name", "correctElution"))
 
+cldCode = 
+	analysed_meanTechReps[, c("Sample_name", "correctElution", 
+				  "meanTechRep", "cldCode")] |> 
+	group_by(Sample_name, correctElution, cldCode) |>
+	summarize(y = max(meanTechRep)) 
+
 # We specify the order of the samples for the plot
 analysed_meanTechReps$Sample_name = 
 	factor(analysed_meanTechReps$Sample_name,
@@ -98,10 +104,16 @@ analysed_meanTechReps |>
 	geom_boxplot(aes(y = meanTechRep), 
 		     outlier.colour = "red") +
 	# The letters must go at the top of each box
-	geom_text(aes(y = max(meanTechRep) + .01,
-		      label = cldCode)) +
+	geom_text(data = cldCode,
+		  aes(x = Sample_name,
+		      y = y + .02,
+		      label = cldCode),
+		  size = 4
+	) +
 	facet_wrap(~correctElution, nrow = 2) +
 	scale_y_continuous(limits = c(0.6, 0.8)) +
 	labs(y = "[Pi] (nM)",
 	     x = "") +
 	theme_bw()
+ggsave("Plots/Valeria_Treatment_by_elution.pdf",
+       height = 4.6, width = 2.7)
