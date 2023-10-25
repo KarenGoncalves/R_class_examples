@@ -1,15 +1,11 @@
 # start by creating a vector with all the packages you need
 pkgs = c("readxl", "tidyverse", "ggpubr")
-
 # We check which packages are NOT (!) installed
 pkgs.To.Install = ! pkgs %in% installed.packages()
-
 # any() checks if there is at least one TRUE in the vector
 if (any(pkgs.To.Install)) install.packages(pkgs[pkgs.To.Install])
-
 for (curPkg in pkgs) library(curPkg, character.only = T) 
 # curPkg is a variable that takes the value of each element in pkgs
-
 theme_set(theme_bw())
 
 #### Set basic variables ####
@@ -40,7 +36,7 @@ names(Elisa_Chlorophyll_YFP) = sheetsElisa
 notMetadata = sheetsElisa != "Metadata"
 # Put all the sheets containing measurements into one table
 Elisa_Chlorophyll_YFP_all = 
-	do.call(what = "rbind", Elisa_Chlorophyll_YFP[notMetadata])
+	list_rbind(Elisa_Chlorophyll_YFP[notMetadata])
 
 # Create a column with the construct name
 Elisa_Chlorophyll_YFP_all$Construct = 
@@ -141,7 +137,8 @@ filteredReps_chlorophyllYFP_data = filter(Elisa_Chlorophyll_YFP_all,
 	arrange(Construct))
 
 # Now we remove them from the data
-filteredChloro_chlorophyllYFP_data = filteredReps_chlorophyllYFP_data %>%
+filteredChloro_chlorophyllYFP_data = 
+	filteredReps_chlorophyllYFP_data %>%
 	dplyr::filter(!Clone %in% clonesToDiscard$Clone)
 
 #### New plots ####
@@ -185,6 +182,8 @@ plots[["YFP_filtered"]] =
 ggarrange(plotlist = plots, nrow = 2, ncol = 2)
 
 # Align the plots
-
-ggarrange(plotlist = plots, nrow = 2, ncol = 2, vjust = T, hjust = T,
-	  labels = "AUTO")
+ggarrange(plotlist = plots, 
+	  nrow = 2, ncol = 2, vjust = T, hjust = T,
+	  labels = "AUTO", label.x = .07)
+ggsave("Plots/Elisa.pdf",
+       height = 6, width = 5)
