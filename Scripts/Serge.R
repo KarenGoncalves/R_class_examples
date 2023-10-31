@@ -39,32 +39,44 @@ input = sapply(sheetsInput, simplify = F, \(sheet) {
 		
 }) %>% list_rbind # bind the spreadsheets on top of each other
 
+cloneNames = grep(pattern = "\\d", value = T, input$SampleID) %>%
+	gsub(pattern = "C", replacement = "") %>%
+	unique() %>% 
+	as.numeric() %>% 
+	sort()
+	
 # Organize the data
 input$SampleID = factor(input$SampleID,
-			levels = c("WT", "EV", input$SampleID) %>%
-				unique
+			levels = c("WT", "EV", paste0("C", cloneNames))
 )
 
 input = input %>%
 	arrange(Treatment_name, SampleID)
 ## Calculate the mean for each sample, treatment and timepoint and plot the curves
 
+# in the column OD750, so we will find the lowest value of OD and add that value to every data point
+
+value_to_add = -1 * min(input$OD750) 
+# This will make the lowest value become 0
+
+input = input %>% mutate(newOD750 = OD750 + value_to_add)
+
 growthCurveData = input %>%
 	dplyr::select(!Treatment) %>%
 	group_by(Treatment_name, SampleID, TimePoint) %>%
-	summarize(meanOD = mean(OD750, na.rm = T),
-		  sdOD = sd(OD750, na.rm = T))
+	summarize(meanOD = mean(newOD750, na.rm = T),
+		  sdOD = sd(newOD750, na.rm = T))
 
 # Plot growth curve
 growthCurveData %>% 
-	ggplot(aes(TimePoint, color = Treatment_name)) +
+	ggplot(aes(TimePoint/24, color = Treatment_name)) +
 	geom_line(aes(y = meanOD), linewidth = 1) +
 	geom_errorbar(aes(ymin = meanOD - sdOD,
 			  ymax = meanOD + sdOD),
 			  # use linewidth for the boldness of the line
 			  # use width for its horizontal length
-			  linewidth = 1, width = 5) +
-	scale_x_continuous(breaks = unique(input$TimePoint)) +
+			  linewidth = 1, width = .5) +
+	scale_x_continuous(breaks = 0:7) +
 	labs(x = "Hours post treatment",
 	     y = measurement,
 	     color = "") +
@@ -79,11 +91,6 @@ ggsave("Plots/Serge_lineplots.pdf",
 
 # Compare curves
 # A warning message comes up because there are negative values
-# in the column OD750, so we will find the lowest value of OD and add that value to every data point
-
-value_to_add = -1 * min(input$OD750) 
-# This will make the lowest value become 0
-input = input %>% mutate(newOD750 = OD750 + value_to_add)
 
 TimePoints = unique(input$TimePoint)
 
