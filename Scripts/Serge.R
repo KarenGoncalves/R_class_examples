@@ -39,6 +39,7 @@ input = sapply(sheetsInput, simplify = F, \(sheet) {
 		
 }) %>% list_rbind # bind the spreadsheets on top of each other
 
+# Order clones by numbers
 cloneNames = grep(pattern = "\\d", value = T, input$SampleID) %>%
 	gsub(pattern = "C", replacement = "") %>%
 	unique() %>% 
@@ -47,7 +48,8 @@ cloneNames = grep(pattern = "\\d", value = T, input$SampleID) %>%
 	
 # Organize the data
 input$SampleID = factor(input$SampleID,
-			levels = c("WT", "EV", paste0("C", cloneNames))
+			levels = c("WT", "EV", 
+				   paste0("C", cloneNames))
 )
 
 input = input %>%
@@ -55,17 +57,21 @@ input = input %>%
 ## Calculate the mean for each sample, treatment and timepoint and plot the curves
 
 # in the column OD750, so we will find the lowest value of OD and add that value to every data point
-
 value_to_add = -1 * min(input$OD750) 
 # This will make the lowest value become 0
 
-input = input %>% mutate(newOD750 = OD750 + value_to_add)
-
+input = input %>% mutate(newOD750 = OD750 + value_to_add,
+			 newOD750_NotNeg = ifelse(OD750 < 0,
+						  0, OD750)
+)
 growthCurveData = input %>%
-	dplyr::select(!Treatment) %>%
+	#dplyr::select(!Treatment) %>%
 	group_by(Treatment_name, SampleID, TimePoint) %>%
 	summarize(meanOD = mean(newOD750, na.rm = T),
-		  sdOD = sd(newOD750, na.rm = T))
+		  sdOD = sd(newOD750, na.rm = T),
+		  meanOD_NotNeg = mean(newOD750_NotNeg, na.rm = T),
+		  sdOD_NotNeg = sd(newOD750_NotNeg, na.rm = T)
+	)
 
 # Plot growth curve
 growthCurveData %>% 
