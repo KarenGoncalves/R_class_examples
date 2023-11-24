@@ -68,12 +68,98 @@ mean_OD_Data = normalisedData %>%
 	summarize(meanOD = mean(nonNeg_normalizedOD, na.rm = T),
 		  sdOD = sd(nonNeg_normalizedOD, na.rm = T)) 
 
-mean_OD_Data %>%
+normalisedData %>%
+	filter(Algae != "ngv",
+	       Day %in% 0:9) %>%
+	filter(Supplementation %in% c("Tyr", "none")) %>%
+	mutate(Concentration_ordered = factor(
+		Concentration,
+		levels = normalisedData$Concentration %>% 
+			as.numeric %>% 
+			sort %>% 
+			unique %>% as.character() 
+	)) %>%
 	ggplot(aes(x = Day %>% as.numeric,
-		   y = (meanOD + 0.01)  %>% log2,
-		   color = Concentration)
-		   ) +
-	geom_line() +
-	facet_wrap(~Supplementation)
+		   y = log(nonNeg_normalizedOD + 1),
+		   color = Concentration_ordered,
+		   fill = Concentration_ordered)) +
+	geom_smooth(linewidth = 1, alpha = 0.05) +
+	labs(x = "Day", y = "log(OD)", 
+	     color = "Concentration (\u03bcM)",
+	     fill = "Concentration (\u03bcM)")
 
-	
+
+
+normalisedData %>%
+	filter(Algae != "ngv",
+	       Day %in% 0:9) %>%
+	filter(Supplementation %in% c("Tys", "none")) %>%
+	mutate(Concentration_ordered = factor(
+		Concentration,
+		levels = normalisedData$Concentration %>% 
+			as.numeric %>% 
+			sort %>% 
+			unique %>% as.character() 
+	)) %>%
+	ggplot(aes(x = Day %>% as.numeric,
+		   y = log(nonNeg_normalizedOD + 1),
+		   color = Concentration_ordered,
+		   fill = Concentration_ordered)) +
+	geom_smooth(linewidth = 1, alpha = 0.1) +
+	scale_colour_viridis_d() +
+	scale_fill_viridis_d() +
+	#coord_cartesian(ylim = c(0, 1.2)) +
+	labs(x = "Day", y = "log(OD)", 
+	     color = "Concentration (\u03bcM)",
+	     fill = "Concentration (\u03bcM)")
+
+#### Statistics ####
+pkgs = c("multcomp", "emmeans", "lme4")
+pkgs.To.Install = ! pkgs %in% installed.packages()
+# any() checks if there is at least one TRUE in the vector
+if (any(pkgs.To.Install)) install.packages(pkgs[pkgs.To.Install])
+for (curPkg in pkgs) library(curPkg, character.only = T) 
+
+
+dataForModel = with(normalisedData %>%
+		    	filter(Algae != "ngv"),
+		    data.frame(
+		    	Day =  as.numeric(Day),
+		    	Concentration = as.factor(Concentration),
+		    	Supplementation = as.factor(Supplementation),
+		    	normalizedOD = log(nonNeg_normalizedOD+0.01)
+		    )
+)
+
+
+exponential.models = 
+	# We will test for each supplementation if there is difference between the concentrations over time
+	sapply(c("Tys", "Tyr"), simplify = F, 
+	       \(metabolite) {
+	       	filteredData = 
+	       		filter(dataForModel,
+	       		       Supplementation %in% 
+	       		       	c(metabolite, "none")
+	       		)
+	       	
+	       	model = with(filteredData, 
+	       		     lmer(normalizedOD ~ 
+	       		          	Day * Concentration * Supplementation + 
+	       		          	(1|Day))
+	       	)
+	       	# Now, using the model created, we compare the concentrations
+	       	emtrends(model, "Concentration", var = "Day",
+	       		 at = list(Day = unique(filteredData$Day))
+	       		 ) %>% pairs %>% summary
+	       		 # We use pairs then summary to get the pvalue
+	       })
+	       	
+
+exponential.models # To see the results
+
+# Who is different?
+exponential.models$Tys %>%
+	filter(p.value < 0.05)
+
+exponential.models$Tyr %>%
+	filter(p.value < 0.05)
