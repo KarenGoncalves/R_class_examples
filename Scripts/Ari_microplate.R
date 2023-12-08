@@ -68,7 +68,16 @@ mean_OD_Data = normalisedData %>%
 	summarize(meanOD = mean(nonNeg_normalizedOD, na.rm = T),
 		  sdOD = sd(nonNeg_normalizedOD, na.rm = T)) 
 
-normalisedData %>%
+levels_Tyr = c(32, 16, 8, 4, 2, 1.5, 1, 0.75, 0.5, 0.25, 0.125, 0)
+colorsTyr = paste0("#", c("000000", 441500,
+			  652000, "922e00",
+			  "bf3c00",	"ef4b00",
+			  "ff6924",	"ff7f45",
+			  "ff996a",	"ffc2a6",
+			  "ffc6ac",	"ffede6")
+)
+Tyr_concentration =
+	normalisedData %>%
 	filter(Algae != "ngv",
 	       Day %in% 0:9) %>%
 	filter(Supplementation %in% c("Tyr", "none")) %>%
@@ -83,14 +92,29 @@ normalisedData %>%
 		   y = log(nonNeg_normalizedOD + 1),
 		   color = Concentration_ordered,
 		   fill = Concentration_ordered)) +
-	geom_smooth(linewidth = 1, alpha = 0.05) +
+	geom_smooth(linewidth = 1, alpha = 0.1) +
 	labs(x = "Day", y = "log(OD)", 
 	     color = "Concentration (\u03bcM)",
-	     fill = "Concentration (\u03bcM)")
+	     fill = "Concentration (\u03bcM)") +
+	scale_color_manual(values = colorsTyr,
+			   breaks = levels_Tyr) +
+	scale_fill_manual(values = colorsTyr,
+			  breaks = levels_Tyr) +
+	theme(legend.position = "bottom")
+
+levels_Tys = c(2, 1.5, 1, 0.75, 0.5, 0.25, 0.125, 0)
+colorsTys = c(rgb(0, .8, 1), 
+	      rgb(0, .7, .2), 
+	      rgb(0, .4, .3),
+	      rgb(0, .4, .1), 
+	      rgb(0, .1, .7),
+	      rgb(.8, .8, 0), 
+	      rgb(.9, .9, 0),
+	      rgb(1, 1, 0)
+)
 
 
-
-normalisedData %>%
+Tys = normalisedData %>%
 	filter(Algae != "ngv",
 	       Day %in% 0:9) %>%
 	filter(Supplementation %in% c("Tys", "none")) %>%
@@ -106,12 +130,14 @@ normalisedData %>%
 		   color = Concentration_ordered,
 		   fill = Concentration_ordered)) +
 	geom_smooth(linewidth = 1, alpha = 0.1) +
-	scale_colour_viridis_d() +
-	scale_fill_viridis_d() +
-	#coord_cartesian(ylim = c(0, 1.2)) +
+	scale_color_manual(values = colorsTys,
+			   breaks = levels_Tys) +
+	scale_fill_manual(values = colorsTys,
+			  breaks = levels_Tys) +
 	labs(x = "Day", y = "log(OD)", 
 	     color = "Concentration (\u03bcM)",
-	     fill = "Concentration (\u03bcM)")
+	     fill = "Concentration (\u03bcM)") +
+	theme(legend.position = "bottom")
 
 #### Statistics ####
 pkgs = c("multcomp", "emmeans", "lme4")
@@ -122,7 +148,8 @@ for (curPkg in pkgs) library(curPkg, character.only = T)
 
 
 dataForModel = with(normalisedData %>%
-		    	filter(Algae != "ngv"),
+		    	filter(Algae != "ngv",
+		    	       Day %in% 0:9),
 		    data.frame(
 		    	Day =  as.numeric(Day),
 		    	Concentration = as.factor(Concentration),
@@ -150,7 +177,7 @@ exponential.models =
 	       	# Now, using the model created, we compare the concentrations
 	       	emtrends(model, "Concentration", var = "Day",
 	       		 at = list(Day = unique(filteredData$Day))
-	       		 ) %>% pairs %>% summary
+	       		 ) %>% pairs %>% summary  %>% as.data.frame() 
 	       		 # We use pairs then summary to get the pvalue
 	       })
 	       	
@@ -158,8 +185,12 @@ exponential.models =
 exponential.models # To see the results
 
 # Who is different?
-exponential.models$Tys %>%
+exponential.models$Tys %>% 
 	filter(p.value < 0.05)
 
 exponential.models$Tyr %>%
 	filter(p.value < 0.05)
+
+ggarrange(plotlist = list(Tyr_concentration + theme(legend.position = "bottom"),
+			  Tys + theme(legend.position = "bottom")),
+	  nrow = 2)
